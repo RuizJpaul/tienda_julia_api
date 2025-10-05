@@ -1,9 +1,12 @@
 import express from "express";
+import cors from "cors";
 import { api } from "./routes/routesProducts.route.js";
 
 const app = express();
 
-const port = 2000;
+app.use(cors());
+
+const port = process.env.PORT || 2000;
 
 app.use(api);
 
