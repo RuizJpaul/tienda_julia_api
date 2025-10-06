@@ -1,45 +1,23 @@
-import express from "express";
-import cors from "cors";
-import { api } from "./routes/routesProducts.route.js";
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import productRoutes from './routes/products.route.js';
+
+// Cargar variables de entorno
+dotenv.config();
 
 const app = express();
 
+// Permitir peticiones desde el frontend (React, Vite, etc.)
 app.use(cors());
+app.use(express.json());
 
-const port = process.env.PORT || 2000;
+// Rutas
+app.use('/api', productRoutes);
 
-app.use(api);
+// Puerto desde .env o por defecto 2000
+const PORT = process.env.PORT || 2000;
 
-app.listen(port, () => {
-    console.log("App is running in port "+port)
-})
-
-export function parseCsvToJson(data) {
-    const lines = data.split("\n");
-    const objects = lines.map((line) => {
-        const object = line.split("\"");
-        return object;
-    });
-
-    const products = objects.map((obj) => {
-
-        const product=[];
-        obj.forEach(element => {
-            if(element!=="" && element!=="," && element!=="\r"){
-                product.push(element);
-            }
-        });
-        return product;
-    });
-
-    const newProducts = products.map((product) => {
-        return ({
-            id: product[0],
-            name: product[1],
-            price: product[2],
-            categorie: product[3],
-        })
-    })
-
-    return newProducts.filter((element) => element.id!=="id");
-}
+app.listen(PORT, () => {
+  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
+});

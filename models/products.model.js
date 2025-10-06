@@ -1,73 +1,61 @@
-import fs from "fs";
-import path from "path";
-import { parseCsvToJson } from "../app.js";
-import levenshtein from "fast-levenshtein";
+import pool from '../data/db.js';
 
-export function AllProducts() {
-    const filePath = path.join(process.cwd(), "./data/products.csv");
-    try {
-        const data = fs.readFileSync(filePath, "utf8");
-        return parseCsvToJson(data);
-    } catch (err) {
-        console.error("Error reading products data: ", err);
-        return [];
-    }
-}
+// Obtener todos los productos
+export const getAllProducts = async () => {
+    const result = await pool.query('SELECT * FROM products ORDER BY id ASC');
+    return result.rows;
+};
 
-export function ProductsCount() {
-    return AllProducts().length;
-}
+// Obtener un producto por ID
+export const getProductById = async (id) => {
+    const result = await pool.query('SELECT * FROM products WHERE id = $1', [id]);
+    return result.rows[0];
+};
 
-export function ProductById(req) {
-    const id = req.params.id;
-    const products = AllProducts();
-    const catchedProduct = products.find((element) => element.id === id);
-    if (!catchedProduct) {
-        return ({
-            msg: "No se encontro ningun producto"
-        })
-    }
-    return catchedProduct;
-}
+// Crear un nuevo producto
+export const createProduct = async (name, price, category) => {
+    const result = await pool.query(
+        'INSERT INTO products (name, price, category) VALUES ($1, $2, $3) RETURNING *',
+        [name, price, category]
+    );
+    return result.rows[0];
+};
 
-export function ProductsByCategorie(req) {
-    const categorie = req.params.categorie;
-    const products = AllProducts();
-    const catchedProducts = products.filter((element) => element.categorie === categorie)
-    if (!catchedProducts) {
-        return ({
-            msg: "No hay productos en esa categoria"
-        })
-    }
-    return catchedProducts;
-}
+// Actualizar un producto
+export const updateProduct = async (id, name, price, category) => {
+    const result = await pool.query(
+        'UPDATE products SET name = $1, price = $2, category = $3 WHERE id = $4 RETURNING *',
+        [name, price, category, id]
+    );
+    return result.rows[0];
+};
 
-export const buscarPorSimilitud = (req) => {
-    const texto = req.params.text
-    const products = AllProducts();
+// Eliminar un producto
+export const deleteProduct = async (id) => {
+    await pool.query('DELETE FROM products WHERE id = $1', [id]);
+    return { message: 'Producto eliminado correctamente' };
+};
 
-    if (!texto || texto.trim() === "") return [{msg: "No ha ingresado ningun valor"}];
+// Filtrar productos por categoría
+export const getProductsByCategory = async (category) => {
+  const result = await pool.query(
+    `SELECT * FROM products 
+     WHERE category ILIKE $1
+     ORDER BY name ASC`,
+    [category]
+  );
+  return result.rows;
+};
 
-    const textoLower = texto.toLowerCase().trim();
-    const palabrasBuscadas = textoLower.split(/\s+/);
 
-    const resultados = products.map((p) => {
-        const nombreLower = p.name.toLowerCase();
-        const distancia = levenshtein.get(textoLower, nombreLower);
-
-        const umbral = Math.floor(nombreLower.length * 0.3);
-
-        const coincidePorPalabra = palabrasBuscadas.some((palabra) =>
-            nombreLower.includes(palabra)
-        );
-
-        const maxLen = Math.max(nombreLower.length, textoLower.length);
-        const similitud = Math.round((1 - distancia / maxLen) * 100);
-
-        const coincide = coincidePorPalabra || distancia <= umbral;
-
-        return { ...p, similitud, coincide };
-    });
-
-    return resultados.filter((r) => r.coincide).sort((a, b) => b.similitud - a.similitud);
+// 🔍 Búsqueda difusa usando pg_trgm
+export const searchByFuzzy = async (query) => {
+    const result = await pool.query(
+        `SELECT * FROM products
+     WHERE similarity(name, $1) > 0.3
+     ORDER BY similarity(name, $1) DESC
+     LIMIT 20;`,
+        [query]
+    );
+    return result.rows;
 };

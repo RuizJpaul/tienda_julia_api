@@ -1,26 +1,82 @@
-import { AllProducts, buscarPorSimilitud, ProductById, ProductsByCategorie, ProductsCount } from "../models/products.model.js";
+import * as ProductModel from '../models/products.model.js';
 
-export function getAllProducts(req, res){
-    const allProducts = AllProducts();
-    res.json(allProducts);
-}
+// Obtener todos los productos
+export const getAll = async (req, res) => {
+    try {
+        const products = await ProductModel.getAllProducts();
+        res.json(products);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
-export function getProductsCount(req, res){
-    const productsCount = ProductsCount();
-    res.json(productsCount);
-}
+// Obtener uno
+export const getOne = async (req, res) => {
+    try {
+        const product = await ProductModel.getProductById(req.params.id);
+        if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
+        res.json(product);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
-export function getProductById(req, res){
-    const productById = ProductById(req);
-    res.json(productById);
-}
+// Crear
+export const create = async (req, res) => {
+    const { name, price, category } = req.body;
+    try {
+        const newProduct = await ProductModel.createProduct(name, price, category);
+        res.status(201).json(newProduct);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
-export function getProductsByCategory(req, res){
-    const productsByCategorie = ProductsByCategorie(req);
-    res.json(productsByCategorie);
-}
+// Actualizar
+export const update = async (req, res) => {
+    const { name, price, category } = req.body;
+    const { id } = req.params;
+    try {
+        const updated = await ProductModel.updateProduct(id, name, price, category);
+        if (!updated) return res.status(404).json({ error: 'Producto no encontrado' });
+        res.json(updated);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
 
-export function getSimilarProducts(req, res){
-    const similarProducts = buscarPorSimilitud(req);
-    res.json(similarProducts);
-}
+// Eliminar
+export const remove = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const result = await ProductModel.deleteProduct(id);
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
+
+// Obtener productos por categoría
+export const getByCategory = async (req, res) => {
+  const { category } = req.params;
+  try {
+    const products = await ProductModel.getProductsByCategory(category);
+    if (products.length === 0)
+      return res.status(404).json({ message: 'No se encontraron productos en esta categoría' });
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+// 🔍 Buscar por similitud (coincidencia difusa)
+export const searchByFuzzy = async (req, res) => {
+    const { q } = req.query;
+    try {
+        const result = await ProductModel.searchByFuzzy(q);
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+};
