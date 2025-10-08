@@ -1,5 +1,7 @@
 import express from 'express';
 import * as ProductController from '../controllers/products.controller.js';
+import { verifyToken } from '../middlewares/auth.middleware.js';
+import { isAdmin } from '../middlewares/role.middleware.js';
 
 const router = express.Router();
 
@@ -10,8 +12,10 @@ router.get('/search/products', ProductController.searchByFuzzy);
 // 🔹 Luego las rutas CRUD
 router.get('/products', ProductController.getAll);
 router.get('/products/:id', ProductController.getOne);
-router.post('/products', ProductController.create);
-router.put('/products/:id', ProductController.update);
-router.delete('/products/:id', ProductController.remove);
+
+
+router.post('/products', verifyToken, isAdmin, ProductController.create);
+router.put('/products/:id', verifyToken, isAdmin, ProductController.update);
+router.delete('/products/:id', verifyToken, isAdmin, ProductController.remove);
 
 export default router;
