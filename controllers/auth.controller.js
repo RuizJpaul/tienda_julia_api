@@ -46,7 +46,7 @@ export const login = async (req, res) => {
       expiresIn: '1h'
     });
 
-    res.json({ message: 'Login exitoso', token });
+    res.json({ message: 'Login exitoso', token, role: "admin" });
   } catch (error) {
     console.error('❌ Error en login:', error);
     res.status(500).json({ error: 'Error al iniciar sesión' });
