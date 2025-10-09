@@ -42,7 +42,7 @@ export const login = async (req, res) => {
     if (!isMatch)
       return res.status(401).json({ error: 'Contraseña incorrecta' });
 
-    const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, {
+    const token = jwt.sign({ id: user.id, username: user.username, role: 'admin' }, JWT_SECRET, {
       expiresIn: '1h'
     });
 
